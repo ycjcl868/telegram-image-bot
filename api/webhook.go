@@ -13,7 +13,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -77,6 +76,8 @@ type GithubResponse struct {
 }
 
 var bot *tgbotapi.BotAPI
+
+const TIME_LAYOUT = "20060102150405"
 
 func init() {
 	tgToken := os.Getenv("TELEGRAM_BOT_TOKEN")
@@ -146,7 +147,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		imgBase64 := base64.StdEncoding.EncodeToString(bytes)
-		filename := fmt.Sprintf("%s%s", strconv.Itoa(update.Message.Date), path.Ext(imgUrl))
+		timeStr := time.Unix(int64(update.Message.Date), 0).Format(TIME_LAYOUT)
+		filename := fmt.Sprintf("%s%s", timeStr, path.Ext(imgUrl))
 		fmt.Printf("filename: %s\n", filename)
 		githubRes, err := uploadToGithub(filename, imgBase64)
 		if err != nil {
