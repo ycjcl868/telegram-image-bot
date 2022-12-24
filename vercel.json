@@ -4,5 +4,11 @@
       "GO_BUILD_FLAGS": "-ldflags '-s -w'"
     }
   },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.go"
+    }
+  ],
   "regions": ["hkg1"]
 }
