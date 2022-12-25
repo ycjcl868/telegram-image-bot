@@ -83,21 +83,21 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		imgBase64 := base64.StdEncoding.EncodeToString(bytes)
-		uuidStr := uuid.NewString()
+		uuidStr := strings.ReplaceAll(uuid.New().String(), "-", "_")
 		filename := fmt.Sprintf("%s%s", uuidStr, path.Ext(imgUrl))
 		fmt.Printf("filename: %s\n", filename)
+
 		githubRes, err := uploadToGithub(filename, imgBase64)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		imgPath := filename
 		if githubRes.Content.Path != "" {
-			imgPath = githubRes.Content.Path
+			filename = githubRes.Content.Path
 		}
 
 		imgPaths := []string{
-			fmt.Sprintf("https://images.rustc.cloud/%s", imgPath),
+			fmt.Sprintf("https://images.rustc.cloud/%s", filename),
 		}
 
 		if githubRes.Content.DownloadURL != "" {
@@ -128,7 +128,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 func uploadToGithub(filename string, content string) (GithubResponse, error) {
 	filenameEncoding := url.QueryEscape(filename)
 	githubUrl := fmt.Sprintf("https://api.github.com/repos/ycjcl868/images/contents/%s", filenameEncoding)
-	method := "PUT"
 	mimeType := mime.TypeByExtension(filepath.Ext(filename))
 	payload := strings.NewReader(fmt.Sprintf(`{
    "message": "Upload by Telegram",
@@ -140,7 +139,7 @@ func uploadToGithub(filename string, content string) (GithubResponse, error) {
 	respResp := GithubResponse{}
 
 	client := &http.Client{}
-	req, err := http.NewRequest(method, githubUrl, payload)
+	req, err := http.NewRequest("PUT", githubUrl, payload)
 
 	if err != nil {
 		fmt.Println(err)
@@ -155,7 +154,7 @@ func uploadToGithub(filename string, content string) (GithubResponse, error) {
 		fmt.Println(err)
 		return respResp, err
 	}
-	
+
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
