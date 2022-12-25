@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+	"net/http"
 	"time"
 )
 
@@ -60,4 +62,8 @@ type GithubResponse struct {
 			Payload   interface{} `json:"payload"`
 		} `json:"verification"`
 	} `json:"commit"`
+}
+
+func TypeHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "<h1>Hello from Go!</h1>")
 }
