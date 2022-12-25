@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/google/uuid"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"io"
 	"log"
 	"mime"
@@ -16,6 +16,8 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+const TIME_LAYOUT = "20060102150405"
 
 var bot *tgbotapi.BotAPI
 
@@ -83,8 +85,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		imgBase64 := base64.StdEncoding.EncodeToString(bytes)
-		uuidStr := strings.ReplaceAll(uuid.New().String(), "-", "_")
-		filename := fmt.Sprintf("%s%s", uuidStr, path.Ext(imgUrl))
+
+		id := gonanoid.Must()
+		filename := fmt.Sprintf("%s%s", id, path.Ext(imgUrl))
 		fmt.Printf("filename: %s\n", filename)
 
 		githubRes, err := uploadToGithub(filename, imgBase64)

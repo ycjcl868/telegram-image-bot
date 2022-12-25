@@ -1,3 +1,8 @@
 {
-  "regions": ["hkg1"]
+  "regions": ["hkg1"],
+  "build": {
+    "env": {
+      "GO_BUILD_FLAGS": "-ldflags '-s -w -linkmode \"external\" -extldflags \"-static\"'"
+    }
+  }
 }
