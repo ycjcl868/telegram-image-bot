@@ -129,10 +129,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(msg))
 }
 
-func uploadToGithub(filename string, content string) (GithubResponse, error) {
-	filenameEncoding := url.QueryEscape(filename)
+func uploadToGithub(filePath string, content string) (GithubResponse, error) {
+	filenameEncoding := url.QueryEscape(filePath)
 	githubUrl := fmt.Sprintf("https://api.github.com/repos/ycjcl868/images/contents/%s", filenameEncoding)
-	mimeType := mime.TypeByExtension(filepath.Ext(filename))
+	mimeType := mime.TypeByExtension(filepath.Ext(filePath))
 	payload := strings.NewReader(fmt.Sprintf(`{
    "message": "Upload by Telegram",
     "branch": "main",
