@@ -15,9 +15,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 )
-
-const TIME_LAYOUT = "20060102150405"
 
 var bot *tgbotapi.BotAPI
 
@@ -86,11 +85,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 		imgBase64 := base64.StdEncoding.EncodeToString(bytes)
 
-		id := gonanoid.Must()
-		filename := fmt.Sprintf("%s%s", id, path.Ext(imgUrl))
-		fmt.Printf("filename: %s\n", filename)
+		filename := fmt.Sprintf("%s%s", gonanoid.Must(), path.Ext(imgUrl))
+		date := time.Unix(int64(update.Message.Date), 0)
+		prefix := fmt.Sprintf("%02d/%02d", date.Year(), date.Month())
+		filePath := path.Join(prefix, filename)
+		fmt.Printf("filePath: %s\n", filePath)
 
-		githubRes, err := uploadToGithub(filename, imgBase64)
+		githubRes, err := uploadToGithub(filePath, imgBase64)
 		if err != nil {
 			log.Fatalln(err)
 		}
