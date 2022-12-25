@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/google/uuid"
 	"io"
 	"log"
 	"mime"
@@ -14,13 +15,9 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
-
 var bot *tgbotapi.BotAPI
-
-const TIME_LAYOUT = "20060102150405"
 
 func init() {
 	tgToken := os.Getenv("TELEGRAM_BOT_TOKEN")
@@ -63,7 +60,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		ReplyToID: update.Message.MessageID,
 	}
 
-	fmt.Printf("photo: %s\n", len(update.Message.Photo))
+	fmt.Printf("photo: %d\n", len(update.Message.Photo))
 
 	if len(update.Message.Photo) > 0 {
 		fileId := update.Message.Photo[len(update.Message.Photo)-1].FileID
@@ -86,8 +83,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		imgBase64 := base64.StdEncoding.EncodeToString(bytes)
-		timeStr := time.Unix(int64(update.Message.Date), 0).Format(TIME_LAYOUT)
-		filename := fmt.Sprintf("%s%s", timeStr, path.Ext(imgUrl))
+		uuidStr := uuid.NewString()
+		filename := fmt.Sprintf("%s%s", uuidStr, path.Ext(imgUrl))
 		fmt.Printf("filename: %s\n", filename)
 		githubRes, err := uploadToGithub(filename, imgBase64)
 		if err != nil {
@@ -125,7 +122,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// 向响应头添加 Content-Type
 	w.Header().Add("Content-Type", "application/json")
 	// 发送格式化输出
-	fmt.Fprintf(w, string(msg))
+	fmt.Fprint(w, string(msg))
 }
 
 func uploadToGithub(filename string, content string) (GithubResponse, error) {
@@ -158,6 +155,7 @@ func uploadToGithub(filename string, content string) (GithubResponse, error) {
 		fmt.Println(err)
 		return respResp, err
 	}
+	
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
@@ -165,9 +163,14 @@ func uploadToGithub(filename string, content string) (GithubResponse, error) {
 		fmt.Println(err)
 		return respResp, err
 	}
+
 	fmt.Println(string(body))
 
 	err = json.Unmarshal(body, &respResp)
+	if err != nil {
+		fmt.Println(err)
+		return respResp, err
+	}
 
 	return respResp, nil
 }
