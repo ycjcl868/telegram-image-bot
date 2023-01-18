@@ -29,6 +29,7 @@ func init() {
 	}
 
 	bot = newBot
+	log.Printf("Authorized on account %s", bot.Self.UserName)
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -42,14 +43,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("%s\n\n", string(body))
 
 	var update tgbotapi.Update // 创建一个 bot update
-
 	err = json.Unmarshal(body, &update)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-
-	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	updateStr, _ := json.Marshal(update)
 	fmt.Printf("%s\n\n", updateStr)
@@ -61,59 +59,17 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		ReplyToID: update.Message.MessageID,
 	}
 
-	fmt.Printf("photo: %d\n", len(update.Message.Photo))
+	if update.Message.IsCommand() {
+		return
+	}
 
 	if len(update.Message.Photo) > 0 {
-		fileId := update.Message.Photo[len(update.Message.Photo)-1].FileID
-		fmt.Printf("fileId: %s\n", fileId)
-		imgUrl, err := bot.GetFileDirectURL(fileId)
-		fmt.Printf("imgUrl: %s \n", imgUrl)
+		imgUrl, err := doUpload(&update)
 		if err != nil {
-			log.Fatalln(err)
+			data.Msg = err.Error()
+		} else {
+			data.Msg = imgUrl
 		}
-
-		resp, err := http.Get(imgUrl)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		defer resp.Body.Close()
-
-		bytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		imgBase64 := base64.StdEncoding.EncodeToString(bytes)
-
-		filename := fmt.Sprintf("%s%s", gonanoid.Must(), path.Ext(imgUrl))
-		date := time.Unix(int64(update.Message.Date), 0)
-		prefix := fmt.Sprintf("%02d/%02d", date.Year(), date.Month())
-		filePath := path.Join(prefix, filename)
-		fmt.Printf("filePath: %s\n", filePath)
-
-		githubRes, err := uploadToGithub(filePath, imgBase64)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		if githubRes.Content.Path != "" {
-			filename = githubRes.Content.Path
-		}
-
-		imgPaths := []string{
-			fmt.Sprintf("https://images.rustc.cloud/%s", filename),
-		}
-
-		if githubRes.Content.DownloadURL != "" {
-			imgPaths = append(imgPaths, githubRes.Content.DownloadURL)
-		}
-
-		imgPathStr := strings.Join(imgPaths, "\n\n")
-
-		fmt.Println(imgPaths)
-		fmt.Println(imgPathStr)
-
-		data.Msg = imgPathStr
 	} else if update.Message.Text != "" {
 		data.Msg = update.Message.Text
 		// 在控制台打印收到的消息
@@ -127,6 +83,63 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	// 发送格式化输出
 	fmt.Fprint(w, string(msg))
+}
+
+func doUpload(update *tgbotapi.Update) (string, error) {
+	fmt.Printf("photo: %d\n", len(update.Message.Photo))
+	fileId := update.Message.Photo[len(update.Message.Photo)-1].FileID
+	fmt.Printf("fileId: %s\n", fileId)
+	imgUrl, err := bot.GetFileDirectURL(fileId)
+	fmt.Printf("imgUrl: %s \n", imgUrl)
+	if err != nil {
+		log.Fatalln(err)
+		return "", err
+	}
+
+	resp, err := http.Get(imgUrl)
+	if err != nil {
+		log.Fatalln(err)
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	bytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+		return "", err
+	}
+
+	imgBase64 := base64.StdEncoding.EncodeToString(bytes)
+
+	filename := fmt.Sprintf("%s%s", gonanoid.Must(), path.Ext(imgUrl))
+	date := time.Unix(int64(update.Message.Date), 0)
+	prefix := fmt.Sprintf("%02d/%02d", date.Year(), date.Month())
+	filePath := path.Join(prefix, filename)
+	fmt.Printf("filePath: %s\n", filePath)
+
+	githubRes, err := uploadToGithub(filePath, imgBase64)
+	if err != nil {
+		log.Fatalln(err)
+		return "", err
+	}
+
+	if githubRes.Content.Path != "" {
+		filename = githubRes.Content.Path
+	}
+
+	imgPaths := []string{
+		fmt.Sprintf("https://images.rustc.cloud/%s", filename),
+	}
+
+	if githubRes.Content.DownloadURL != "" {
+		imgPaths = append(imgPaths, githubRes.Content.DownloadURL)
+	}
+
+	imgPathStr := strings.Join(imgPaths, "\n\n")
+
+	fmt.Println(imgPaths)
+	fmt.Println(imgPathStr)
+	return imgPathStr, nil
 }
 
 func uploadToGithub(filePath string, content string) (GithubResponse, error) {
