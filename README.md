@@ -1,5 +1,4 @@
 <h1 align="center">Telegram Image Uploader Bot</h1>
-<p align="center">desc<p>
 
 ## Screenshots
 
