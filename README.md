@@ -8,6 +8,15 @@
 - [https://images.rustc.cloud/2023/01/cDDeaTfJl8hgabKsQjH3C.jpg](https://images.rustc.cloud/2023/01/cDDeaTfJl8hgabKsQjH3C.jpg)
 - [https://images.rustc.cloud/2023/01/kS9DG46LANQzKXOgD7rtT.jpg](https://images.rustc.cloud/2023/01/kS9DG46LANQzKXOgD7rtT.jpg)
 
+## Environment
+
+```bash
+GITHUB_TOKEN=
+TELEGRAM_BOT_TOKEN=
+IMG_HOST=    # eg https://images.rustc.cloud
+GITHUB_REPO= # eg ycjcl868/images
+```
+
 ## Available Commands
 
 In the project directory, you can run:

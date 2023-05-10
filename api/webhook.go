@@ -4,8 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"io"
 	"log"
 	"mime"
@@ -16,12 +14,21 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 var bot *tgbotapi.BotAPI
+var imgHost string
+var githubRepo string
+var githubToken string
 
 func init() {
 	tgToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+	githubToken = os.Getenv("GITHUB_TOKEN")
+	imgHost = os.Getenv("IMG_HOST")
+	githubRepo = os.Getenv("GITHUB_REPO")
 	newBot, err := tgbotapi.NewBotAPI(tgToken)
 
 	if err != nil {
@@ -128,7 +135,7 @@ func doUpload(update *tgbotapi.Update) (string, error) {
 	}
 
 	imgPaths := []string{
-		fmt.Sprintf("https://images.rustc.cloud/%s", filename),
+		fmt.Sprintf("%s/%s", imgHost, filename),
 	}
 
 	if githubRes.Content.DownloadURL != "" {
@@ -144,7 +151,7 @@ func doUpload(update *tgbotapi.Update) (string, error) {
 
 func uploadToGithub(filePath string, content string) (GithubResponse, error) {
 	filenameEncoding := url.QueryEscape(filePath)
-	githubUrl := fmt.Sprintf("https://api.github.com/repos/ycjcl868/images/contents/%s", filenameEncoding)
+	githubUrl := fmt.Sprintf("https://api.github.com/repos/%s/contents/%s", githubRepo, filenameEncoding)
 	mimeType := mime.TypeByExtension(filepath.Ext(filePath))
 	payload := strings.NewReader(fmt.Sprintf(`{
    "message": "Upload by Telegram",
@@ -163,7 +170,7 @@ func uploadToGithub(filePath string, content string) (GithubResponse, error) {
 		return respResp, err
 	}
 	req.Header.Add("User-Agent", "Telegram")
-	req.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("GITHUB_TOKEN")))
+	req.Header.Add("Authorization", fmt.Sprintf("token %s", githubToken))
 	req.Header.Add("Content-Type", mimeType)
 
 	res, err := client.Do(req)
